@@ -7,8 +7,8 @@ repo_name: "aws-observability/terraform-aws-observability-accelerator"
 repo_url: "https://github.com/aws-observability/terraform-aws-observability-accelerator"
 
 theme:
-  logo: ../images/aws-logo.png
-  favicon: ../images/aws-favicon.png
+  logo: images/aws-logo.png
+  favicon: images/aws-favicon.png
   name: material
   font:
     text: ember
@@ -27,11 +27,16 @@ nav:
   - Concepts: concepts.md
   - Amazon EKS:
       - Infrastructure monitoring: eks/index.md
+      - EKS API server monitoring: eks/eks-apiserver.md
       - Multicluster monitoring: eks/multicluster.md
       - Java/JMX: eks/java.md
       - Nginx: eks/nginx.md
+      - Istio: eks/istio.md
       - Viewing logs: eks/logs.md
+      - Tracing: eks/tracing.md
       - Teardown: eks/destroy.md
+  - Amazon CloudWatch Container Insights:
+      - Amazon EKS: container-insights/eks.md
   - Monitoring Managed Service for Prometheus Workspaces: workloads/managed-prometheus.md
   - Supporting Examples:
       - EKS Cluster with VPC: helpers/new-eks-cluster.md
@@ -46,6 +51,8 @@ markdown_extensions:
   - codehilite
   - footnotes
   - pymdownx.critic
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

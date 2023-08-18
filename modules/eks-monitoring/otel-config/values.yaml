@@ -6,6 +6,8 @@ accountId: ${account_id}
 globalScrapeTimeout: ${global_scrape_timeout}
 globalScrapeSampleLimit: ${global_scrape_sample_limit}
 
+enableAPIserver: ${enable_apiserver_monitoring}
+
 enableTracing: ${enable_tracing}
 otlpGrpcEndpoint: ${otlp_grpc_endpoint}
 otlpHttpEndpoint: ${otlp_http_endpoint}
@@ -13,8 +15,7 @@ tracingTimeout: ${tracing_timeout}
 tracingSendBatchSize: ${tracing_send_batch_size}
 
 enableCustomMetrics: ${enable_custom_metrics}
-customMetricsPorts: ${custom_metrics_ports}
-customMetricsDroppedSeriesPrefixes: ${custom_metrics_dropped_series_prefixes}
+customMetrics: ${custom_metrics}
 
 enableJava: ${enable_java}
 javaScrapeSampleLimit: ${java_scrape_sample_limit}
@@ -24,4 +25,10 @@ enableNginx: ${enable_nginx}
 nginxScrapeSampleLimit: ${nginx_scrape_sample_limit}
 nginxPrometheusMetricsEndpoint: ${nginx_prometheus_metrics_endpoint}
 
+enableIstio: ${enable_istio}
+istioScrapeSampleLimit: ${istio_scrape_sample_limit}
+istioPrometheusMetricsEndpoint: ${istio_prometheus_metrics_endpoint}
+
 adotLoglevel: ${adot_loglevel}
+
+enableAdotcollectorMetrics: ${enable_adotcollector_metrics}

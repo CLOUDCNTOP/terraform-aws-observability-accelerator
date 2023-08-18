@@ -3,12 +3,7 @@ kind: OpenTelemetryCollector
 metadata:
   name: adot
 spec:
-  {{ if .Values.enableTracing }}
-  mode: daemonset
-  hostNetwork: true
-  {{ else }}
   mode: deployment
-  {{ end }}
   serviceAccount: adot-collector-kubeprometheus
   env:
     - name: "K8S_NODE_NAME"
@@ -31,6 +26,15 @@ spec:
             endpoint: {{ .Values.otlpGrpcEndpoint }}
           http:
             endpoint: {{ .Values.otlpHttpEndpoint }}
+      {{ if .Values.enableAdotcollectorMetrics }}
+      prometheus/1:
+        config:
+          scrape_configs:
+          - job_name: otel-collector-metrics
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['localhost:8888']
+      {{ end }}
       prometheus:
         config:
           global:
@@ -56,11 +60,6 @@ spec:
                 regex: (.+)
                 target_label: __metrics_path__
                 replacement: /api/v1/nodes/$${1}/proxy/metrics
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_node_name]
-              {{ end }}
             - job_name: 'kubelet'
               scheme: https
               tls_config:
@@ -78,29 +77,35 @@ spec:
                 regex: (.+)
                 target_label: __metrics_path__
                 replacement: /api/v1/nodes/$${1}/proxy/metrics/cadvisor
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_node_name]
-              {{ end }}
-            - job_name: 'kube-admin'
+
+            {{ if .Values.enableAPIserver }}
+            - job_name: 'apiserver'
               scheme: https
               tls_config:
                 ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
                 insecure_skip_verify: true
               bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
               kubernetes_sd_configs:
-              - role: node
+              - role: endpoints
               relabel_configs:
-              - target_label: __address__
-                replacement: kubernetes.default.svc.cluster.local:443
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_node_name]
+              - source_labels:
+                  [
+                    __meta_kubernetes_namespace,
+                    __meta_kubernetes_service_name,
+                    __meta_kubernetes_endpoint_port_name,
+                  ]
+                action: keep
+                regex: default;kubernetes;https
               metric_relabel_configs:
               - action: keep
                 source_labels: [__name__]
-                regex: 'apiserver_(request_duration_seconds|storage_list_duration_seconds|admission_controller_admission_duration_seconds|flowcontrol_request_wait_duration_seconds).*|apiserver_(admission_webhook_fail_open_count|tls_handshake_errors_total|request_total)|rest_client_request_duration_seconds.*|rest_client_requests_total|etcd_(request_duration_seconds|db_total_size_in_bytes).*'
+              - source_labels: [__name__, le]
+                separator: ;
+                regex: apiserver_request_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|25|40|50)
+                replacement: $1
+                action: drop
+            {{ end }}
+
             - job_name: serviceMonitor/default/kube-prometheus-stack-prometheus-node-exporter/0
               honor_timestamps: true
               scrape_interval: {{ .Values.globalScrapeInterval }}
@@ -195,11 +200,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -302,11 +302,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -408,11 +403,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -530,11 +520,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -652,11 +637,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -773,11 +753,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -882,11 +857,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -993,11 +963,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -1104,11 +1069,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -1215,11 +1175,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -1326,11 +1281,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -1431,11 +1381,6 @@ spec:
                 regex: "0"
                 replacement: $$1
                 action: keep
-              {{ if .Values.enableTracing }}
-              - action: keep
-                regex: $K8S_NODE_NAME
-                source_labels: [__meta_kubernetes_endpoint_node_name]
-              {{ end }}
               kubernetes_sd_configs:
                 - role: endpoints
                   kubeconfig_file: ""
@@ -1459,18 +1404,21 @@ spec:
                 - action: replace
                   source_labels: [__meta_kubernetes_endpoint_node_name]
                   target_label: nodename
-                {{ if .Values.enableTracing }}
-                - action: keep
-                  regex: $K8S_NODE_NAME
-                  source_labels: [__meta_kubernetes_endpoint_node_name]
-                {{ end }}
-            - job_name: "custom-metrics"
+            {{ if .Values.enableCustomMetrics }}
+            {{- range $k, $v := fromYaml .Values.customMetrics }}
+            - job_name: "{{ $k }}"
               kubernetes_sd_configs:
                 - role: pod
+              metrics_path: '{{ $v.path }}'
+              {{ if $v.enableBasicAuth }}
+              basic_auth:
+                username: '{{ $v.basicAuthUsername }}'
+                password: '{{ $v.basicAuthPassword }}'
+              {{ end }}
               relabel_configs:
                 - source_labels: [ __address__ ]
                   action: keep
-                  regex: '{{ .Values.customMetricsPorts }}'
+                  regex: '{{ $v.ports }}'
                 - action: replace
                   source_labels: [__meta_kubernetes_pod_node_name]
                   target_label: nodename
@@ -1486,16 +1434,12 @@ spec:
                 - action: replace
                   source_labels: [__meta_kubernetes_pod_controller_kind]
                   target_label: pod_controller_kind
-                {{ if .Values.enableTracing }}
-                - action: keep
-                  regex: $K8S_NODE_NAME
-                  source_labels: [__meta_kubernetes_pod_node_name]
-                {{ end }}
               metric_relabel_configs:
                 - source_labels: [ __name__ ]
-                  regex: '{{ .Values.customMetricsDroppedSeriesPrefixes }}'
+                  regex: '{{ $v.droppedSeriesPrefixes }}'
                   action: drop
-
+            {{- end }}
+            {{ end }}
             {{ if .Values.enableJava }}
             - job_name: 'kubernetes-java-jmx'
               sample_limit: {{ .Values.javaScrapeSampleLimit }}
@@ -1562,6 +1506,67 @@ spec:
                   action: labeldrop
             {{ end }}
 
+         {{ if .Values.enableIstio }}
+            - honor_labels: true
+              job_name: kubernetes-istio
+              kubernetes_sd_configs:
+              - role: pod
+              relabel_configs:
+              - action: keep
+                regex: true
+                source_labels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+              - action: drop
+                regex: true
+                source_labels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_scrape_slow
+              - action: replace
+                regex: (https?)
+                source_labels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_scheme
+                target_label: __scheme__
+              - action: replace
+                regex: (.+)
+                source_labels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_path
+                target_label: __metrics_path__
+              - action: replace
+                regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+                replacement: '[$$2]:$$1'
+                source_labels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_port
+                - __meta_kubernetes_pod_ip
+                target_label: __address__
+              - action: replace
+                regex: (\d+);((([0-9]+?)(\.|$)){4})
+                replacement: $$2:$$1
+                source_labels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_port
+                - __meta_kubernetes_pod_ip
+                target_label: __address__
+              - action: labelmap
+                regex: __meta_kubernetes_pod_annotation_prometheus_io_param_(.+)
+                replacement: __param_$1
+              - action: labelmap
+                regex: __meta_kubernetes_pod_label_(.+)
+              - action: replace
+                source_labels:
+                - __meta_kubernetes_namespace
+                target_label: namespace
+              - action: replace
+                source_labels:
+                - __meta_kubernetes_pod_name
+                target_label: pod
+              - action: keep
+                source_labels: [ __address__ ]
+                regex: '.*:15020$$'
+              - action: drop
+                regex: Pending|Succeeded|Failed|Completed
+                source_labels:
+                - __meta_kubernetes_pod_phase
+            {{ end }}
+
+
     exporters:
       {{ if .Values.enableTracing }}
       awsxray:
@@ -1574,7 +1579,7 @@ spec:
         resource_to_telemetry_conversion:
           enabled: true
       logging:
-        loglevel: {{ .Values.adotLoglevel }}
+        verbosity: {{ .Values.adotLoglevel }}
     extensions:
       sigv4auth:
         region: {{ .Values.region }}
@@ -1611,9 +1616,21 @@ spec:
           receivers: [prometheus, otlp]
           processors: [batch/metrics, attributes/metrics]
           exporters: [logging, prometheusremotewrite]
+        {{ if .Values.enableAdotcollectorMetrics }}
+        metrics/1:
+         receivers: [prometheus/1]
+         processors: []
+         exporters: [prometheusremotewrite]
+        {{ end }}
         {{ if .Values.enableTracing }}
         traces:
           receivers: [otlp]
           processors: [batch/traces]
           exporters: [logging, awsxray]
         {{ end }}
+      {{ if .Values.enableAdotcollectorMetrics }}
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
+          level: basic
+      {{ end }}
