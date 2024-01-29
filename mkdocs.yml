@@ -28,6 +28,7 @@ nav:
   - Amazon EKS:
       - Infrastructure: eks/index.md
       - EKS API server: eks/eks-apiserver.md
+      - EKS GPU montitoring: eks/gpu-monitoring.md
       - Multicluster:
           - Single AWS account: eks/multicluster.md
           - Cross AWS account: eks/multiaccount.md
@@ -44,9 +45,12 @@ nav:
   - Amazon CloudWatch Container Insights:
       - Amazon EKS: container-insights/eks.md
   - Monitoring Managed Service for Prometheus Workspaces: workloads/managed-prometheus.md
+  - Amazon ECS:
+      - Cluster Monitoring: ecs/ecs-monitoring-on-ec2.md
   - Supporting Examples:
       - EKS Cluster with VPC: helpers/new-eks-cluster.md
       - Amazon Managed Grafana setup: helpers/managed-grafana.md
+      - ECS Cluster with VPC: helpers/ecs-cluster-with-vpc.md
   - Support & Feedback: support.md
   - Contributors: contributors.md
 
